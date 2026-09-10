@@ -3,6 +3,15 @@ title: Bem-vindo ao Laboratório de Matemática
 description: Get started building your docs site with Starlight.
 ---
 
+import Chart from '$lib/components/BarChart.astro';
+
 ## Objetivos
 
 ## Responsáveis
+
+<Chart
+	csvPath="/dados/laranjas.csv"
+	xColumn="laranjas"
+	yColumns={['peso total(g)', 'peso suco(g)', 'sementes (g)']}
+	title="Laranjas"
+/>

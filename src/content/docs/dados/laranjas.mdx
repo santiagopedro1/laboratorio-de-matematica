@@ -1,0 +1,31 @@
+---
+title: Laranjas
+description: Excepteur ipsum et commodo aliquip occaecat fugiat. Id culpa occaecat ullamco irure anim esse mollit ea. Elit labore fugiat ut ut amet do sit sint esse ea. Qui exercitation eiusmod laborum mollit officia id incididunt. Ea duis nisi et aliqua ut est officia consequat duis.
+---
+
+import Chart from '$lib/components/Chart.svelte';
+import BarChart from '$lib/components/BarChart.astro';
+
+Excepteur ipsum et commodo aliquip occaecat fugiat. Id culpa occaecat ullamco irure anim esse mollit ea. Elit labore fugiat ut ut amet do sit sint esse ea. Qui exercitation eiusmod laborum mollit officia id incididunt. Ea duis nisi et aliqua ut est officia consequat duis.
+
+Sunt labore ut consectetur labore nisi ex consectetur. Excepteur irure velit cupidatat et Lorem dolore exercitation commodo sunt anim culpa et consectetur ex. Ad excepteur consectetur duis aliqua sint qui.
+
+{/* link to download /dados/laranjas.csv */}
+[laranjas download teste](/dados/laranjas.csv)
+
+<Chart
+	filename="laranjas.csv"
+	x="laranjas"
+	y={['peso total(g)', 'peso suco(g)', 'sementes (g)']}
+	seriesLayout="group"
+	client:load
+/>
+
+<BarChart
+	csvPath="/dados/laranjas.csv"
+	xColumn="laranjas"
+	yColumns={['peso total(g)', 'peso suco(g)', 'sementes (g)']}
+	title="Laranjas"
+/>
+
+Ex elit exercitation ipsum amet occaecat deserunt ad deserunt. Ex adipisicing ad dolore ad irure id Lorem consectetur dolore incididunt ullamco sunt. Sunt sunt ea adipisicing nostrud incididunt sint dolore. Non cillum quis voluptate qui sit ex esse sunt do aliqua aliquip exercitation cillum consectetur.

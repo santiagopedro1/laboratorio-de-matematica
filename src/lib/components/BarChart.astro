@@ -1,0 +1,126 @@
+---
+interface Props {
+	csvPath: string;
+	xColumn: string;
+	yColumns: string[];
+	title: string;
+	subtitle?: string;
+}
+
+const { csvPath, xColumn, yColumns, title, subtitle } = Astro.props;
+---
+
+<canvas
+	class="astro-bar-chart"
+	data-csv={csvPath}
+	data-x={xColumn}
+	data-y={JSON.stringify(yColumns)}
+	data-title={title}
+	data-subtitle={subtitle || ''}
+></canvas>
+
+<script>
+	import Chart from 'chart.js/auto';
+
+	Chart.defaults.font.size = 16;
+	Chart.defaults.color = '#00000';
+
+	// Basic CSV parser for unquoted fields
+	function parseCSV(csvText: string) {
+		const lines = csvText.trim().split('\n');
+		if (lines.length === 0) return [];
+
+		const headers = lines[0].split(',').map((h) => h.trim());
+		return lines.slice(1).map((line) => {
+			const values = line.split(',');
+			return headers.reduce(
+				(obj, header, index) => {
+					obj[header] = values[index] ? values[index].trim() : null;
+					return obj;
+				},
+				{} as Record<string, string | null>
+			);
+		});
+	}
+
+	async function renderCharts() {
+		const canvases = document.querySelectorAll<HTMLCanvasElement>('.astro-bar-chart');
+
+		for (const canvas of canvases) {
+			if (canvas.dataset.initialized) continue;
+			canvas.dataset.initialized = 'true';
+
+			const csvPath = canvas.dataset.csv;
+			const xColumn = canvas.dataset.x;
+			const yColumns = JSON.parse(canvas.dataset.y || '[]');
+			const title = canvas.dataset.title;
+			const subtitle = canvas.dataset.subtitle;
+
+			if (!csvPath || !xColumn) continue;
+
+			try {
+				const response = await fetch(csvPath);
+				const csvText = await response.text();
+				const data = parseCSV(csvText);
+
+				const labels = data.map((row) => row[xColumn]);
+				const datasets = yColumns.map((yCol: string, index: number) => {
+					const hue = (index * 137.5) % 360;
+					return {
+						label: yCol,
+						data: data.map((row) => parseFloat(row[yCol] || '0')),
+						backgroundColor: `hsla(${hue}, 70%, 50%, 0.6)`,
+						borderColor: `hsla(${hue}, 70%, 50%, 1)`,
+						borderWidth: 1
+					};
+				});
+
+				new Chart(canvas, {
+					type: 'bar',
+					data: { labels, datasets },
+					options: {
+						responsive: true,
+						scales: {
+							y: { beginAtZero: true },
+							x: {
+								grid: {
+									display: false // Hides the vertical grid lines along the X-axis
+								}
+							}
+						},
+						plugins: {
+							tooltip: {
+								mode: 'index',
+								intersect: false,
+
+								backgroundColor: '#fff',
+								titleColor: '#666',
+								bodyColor: '#666',
+
+								boxPadding: 5,
+
+								titleFont: {
+									size: 18,
+									weight: 'bolder'
+								}
+							},
+							title: {
+								display: !!title,
+								text: title
+							},
+							subtitle: {
+								display: !!subtitle,
+								text: subtitle
+							}
+						}
+					}
+				});
+			} catch (error) {
+				console.error('Failed to render bar chart:', error);
+			}
+		}
+	}
+
+	renderCharts();
+	document.addEventListener('astro:page-load', renderCharts);
+</script>

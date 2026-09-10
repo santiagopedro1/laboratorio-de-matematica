@@ -28,7 +28,8 @@ export default defineConfig({
 			markdown: {
 				headingLinks: false
 			},
-			plugins: [starlightSidebarSwipe(), starlightThemeGalaxy()]
+			plugins: [starlightSidebarSwipe(), starlightThemeGalaxy()],
+			customCss: ['./src/styles/global.css']
 		}),
 		svelte()
 	],

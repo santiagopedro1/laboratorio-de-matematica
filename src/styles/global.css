@@ -1,11 +1,14 @@
 @layer base, starlight, theme, components, utilities;
 
-@import '@astrojs/starlight-tailwind';
+/* @import 'tailwindcss/preflight.css'; */
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
-@import "tw-animate-css";
-@import "shadcn-svelte/tailwind.css";
-@import "@fontsource-variable/inter";
+
+@import '@astrojs/starlight-tailwind';
+
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
+@import '@fontsource-variable/inter';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -130,4 +133,29 @@
 	html {
 		@apply font-sans;
 	}
+}
+
+/* 1. Reset the button and force flex centering */
+.layerchart-legend-fix button {
+	appearance: none !important;
+	background-color: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	cursor: pointer;
+	color: inherit;
+	font-family: inherit;
+
+	/* Force Flexbox alignment */
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+}
+
+/* 2. Strip inherited Markdown spacing from the text and icon inside the button */
+.layerchart-legend-fix button > * {
+	margin: 0 !important;
+	padding: 0 !important;
+	line-height: 1 !important;
+	display: block !important;
 }
