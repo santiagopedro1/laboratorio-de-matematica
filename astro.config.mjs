@@ -15,6 +15,15 @@ export default defineConfig({
 		starlight({
 			title: 'Laboratório de Matemática',
 			// social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			locales: {
+				root: {
+					label: 'Português (BR)',
+					lang: 'pt-BR'
+				}
+			},
+			expressiveCode: {
+				useStarlightDarkModeSwitch: false
+			},
 			sidebar: [
 				{
 					label: 'Início',
@@ -28,7 +37,7 @@ export default defineConfig({
 			markdown: {
 				headingLinks: false
 			},
-			plugins: [starlightSidebarSwipe(), starlightThemeGalaxy()],
+			plugins: [starlightSidebarSwipe()],
 			customCss: ['./src/styles/global.css']
 		}),
 		svelte()
