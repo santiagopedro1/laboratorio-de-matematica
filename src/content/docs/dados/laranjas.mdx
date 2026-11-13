@@ -3,7 +3,6 @@ title: Laranjas
 description: Excepteur ipsum et commodo aliquip occaecat fugiat. Id culpa occaecat ullamco irure anim esse mollit ea. Elit labore fugiat ut ut amet do sit sint esse ea. Qui exercitation eiusmod laborum mollit officia id incididunt. Ea duis nisi et aliqua ut est officia consequat duis.
 ---
 
-import Chart from '$lib/components/Chart.svelte';
 import BarChart from '$lib/components/BarChart.astro';
 
 ## Teste 1
@@ -16,14 +15,6 @@ Sunt labore ut consectetur labore nisi ex consectetur. Excepteur irure velit cup
 
 {/* link to download /dados/laranjas.csv */}
 [laranjas download teste](/dados/laranjas.csv)
-
-<Chart
-	filename="laranjas.csv"
-	x="laranjas"
-	y={['peso total(g)', 'peso suco(g)', 'sementes (g)']}
-	seriesLayout="group"
-	client:load
-/>
 
 <BarChart
 	csvPath="/dados/laranjas.csv"

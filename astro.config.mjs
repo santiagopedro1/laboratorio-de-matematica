@@ -5,8 +5,6 @@ import starlight from '@astrojs/starlight';
 import starlightSidebarSwipe from 'starlight-sidebar-swipe';
 import starlightThemeGalaxy from 'starlight-theme-galaxy';
 
-import svelte from '@astrojs/svelte';
-
 import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
@@ -39,8 +37,7 @@ export default defineConfig({
 			},
 			plugins: [starlightSidebarSwipe()],
 			customCss: ['./src/styles/global.css']
-		}),
-		svelte()
+		})
 	],
 
 	vite: {
