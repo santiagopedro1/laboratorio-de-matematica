@@ -1,0 +1,46 @@
+---
+title: Oenothera
+description: Dados morfológicos de três espécies do gênero Oenothera — affinis, molissima e parodiana. Cada espécie tem medidas de tubo, sépala, pétala, estame, estigma/estilo, diâmetro do estigma e ovário.
+---
+
+import ScatterPlot from '$lib/components/ScatterPlot.astro';
+
+Os datasets abaixo reúnem medidas morfológicas (em milímetros) de três espécies do gênero _Oenothera_. Para cada flor amostrada foram medidos o comprimento do tubo, da sépala, da pétala, do estame, do estigma (ou do estilo, dependendo da espécie), o diâmetro do estigma e o comprimento do ovário.
+
+Nos gráficos de dispersão abaixo, use os seletores **Eixo X** e **Eixo Y** para comparar quaisquer duas medidas entre si.
+
+## Oenothera affinis
+
+Medidas coletadas de _Oenothera affinis_. Note que os valores de comprimento do tubo são os mais altos entre as três espécies, frequentemente acima de 90&nbsp;mm.
+
+<ScatterPlot
+  csvPath="/dados/oenothera-affinis.csv"
+  title="Dispersão de Oenothera affinis"
+  subtitle="Comparação entre as medidas morfológicas"
+/>
+
+[Download: oenothera-affinis.csv](/dados/oenothera-affinis.csv)
+
+## Oenothera molissima
+
+Medidas coletadas de _Oenothera molissima_. Esta espécie apresenta as menores dimensões gerais, com tubos em geral entre 16 e 30&nbsp;mm.
+
+<ScatterPlot
+  csvPath="/dados/oenothera-molissima.csv"
+  title="Dispersão de Oenothera molissima"
+  subtitle="Comparação entre as medidas morfológicas"
+/>
+
+[Download: oenothera-molissima.csv](/dados/oenothera-molissima.csv)
+
+## Oenothera parodiana
+
+Medidas coletadas de _Oenothera parodiana_. Os valores ficam em uma faixa intermediária, com tubos tipicamente entre 23 e 45&nbsp;mm.
+
+<ScatterPlot
+  csvPath="/dados/oenothera-parodiana.csv"
+  title="Dispersão de Oenothera parodiana"
+  subtitle="Comparação entre as medidas morfológicas"
+/>
+
+[Download: oenothera-parodiana.csv](/dados/oenothera-parodiana.csv)

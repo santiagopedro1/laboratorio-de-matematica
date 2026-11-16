@@ -3,15 +3,16 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 import starlightSidebarSwipe from 'starlight-sidebar-swipe';
-import starlightThemeGalaxy from 'starlight-theme-galaxy';
 
 import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://laboratorio-de-matematica.vercel.app',
 	integrations: [
 		starlight({
 			title: 'Laboratório de Matemática',
+			disable404Route: true,
 			// social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
 			locales: {
 				root: {

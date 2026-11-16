@@ -8,16 +8,23 @@ interface Props {
 }
 
 const { csvPath, xColumn, yColumns, title, subtitle } = Astro.props;
+
+// Unique per instance so multiple charts can live on the same page
+const id = `chart-${crypto.randomUUID()}`;
 ---
 
-<canvas
-	class="chart"
-	data-csv={csvPath}
-	data-x={xColumn}
-	data-y={JSON.stringify(yColumns)}
-	data-title={title}
-	data-subtitle={subtitle || ''}
-></canvas>
+<div class="not-content relative my-6 h-80 w-full">
+	<canvas
+		id={id}
+		role="img"
+		aria-label={`Gráfico de barras: ${title}`}
+		data-csv={csvPath}
+		data-x={xColumn}
+		data-y={JSON.stringify(yColumns)}
+		data-title={title}
+		data-subtitle={subtitle || ''}
+	></canvas>
+</div>
 
 <script>
 	import { initChart } from './chartUtils';

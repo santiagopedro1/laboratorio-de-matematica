@@ -3,10 +3,16 @@
 When starting the dev server, use background mode:
 
 ```
-astro dev --background
+bun dev --background
 ```
 
 Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
+
+## Package Management
+
+Always use `bun` for anything Node-related: installing dependencies, adding or removing packages, running scripts, and executing binaries (`bun add`, `bun remove`, `bun install`, `bun run`, `bunx`).
+
+Never use `npm`, `pnpm`, or `yarn` — they produce lockfiles and `node_modules` layouts that conflict with this project's `bun.lock`.
 
 ## Documentation
 

@@ -8,11 +8,50 @@ declare module 'chart.js' {
 
 // Global Chart Defaults
 Chart.defaults.font.size = 16;
-Chart.defaults.color = '#000000';
+
+export interface ChartTheme {
+	text: string;
+	muted: string;
+	grid: string;
+}
+
+/**
+ * Resolve chart colors from the active Starlight theme. Canvas rendering cannot
+ * use CSS variables directly, so the values are read from the document.
+ */
+export function getChartTheme(): ChartTheme {
+	if (typeof document === 'undefined') {
+		return { text: '#000000', muted: '#666666', grid: 'rgba(0, 0, 0, 0.1)' };
+	}
+
+	const styles = getComputedStyle(document.documentElement);
+	const read = (token: string, fallback: string) => styles.getPropertyValue(token).trim() || fallback;
+
+	return {
+		text: read('--sl-color-white', '#000000'),
+		muted: read('--sl-color-gray-3', '#666666'),
+		grid: read('--sl-color-gray-6', 'rgba(128, 128, 128, 0.2)')
+	};
+}
+
+/** Run a callback whenever the Starlight theme (light/dark) changes. */
+export function onThemeChange(callback: () => void) {
+	if (typeof window === 'undefined') return;
+
+	let currentTheme = document.documentElement.dataset.theme;
+
+	new MutationObserver(() => {
+		const nextTheme = document.documentElement.dataset.theme;
+		if (nextTheme === currentTheme) return;
+		currentTheme = nextTheme;
+		callback();
+	}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+}
 
 export const chartConfig = (type: string, labels: (string | null)[], datasets: any[], title?: string, subtitle?: string) => {
 	const isCategoryAxis = ['bar', 'line'].includes(type);
 	const isCartesian = isCategoryAxis || ['scatter', 'bubble'].includes(type);
+	const theme = getChartTheme();
 
 	return {
 		type,
@@ -54,10 +93,20 @@ export const chartConfig = (type: string, labels: (string | null)[], datasets: a
 				intersect: false
 			},
 			responsive: true,
+			maintainAspectRatio: false,
 			...(isCartesian && {
 				scales: {
-					y: { beginAtZero: true },
-					x: { grid: { display: false } }
+					y: {
+						beginAtZero: true,
+						ticks: { color: theme.muted },
+						grid: { color: theme.grid },
+						title: { color: theme.muted }
+					},
+					x: {
+						grid: { display: false },
+						ticks: { color: theme.muted },
+						title: { color: theme.muted }
+					}
 				}
 			}),
 			plugins: {
@@ -68,8 +117,9 @@ export const chartConfig = (type: string, labels: (string | null)[], datasets: a
 					enabled: false,
 					external: customTooltip
 				},
-				title: { display: !!title, text: title },
-				subtitle: { display: !!subtitle, text: subtitle }
+				legend: { labels: { color: theme.text } },
+				title: { display: !!title, text: title, color: theme.text },
+				subtitle: { display: !!subtitle, text: subtitle, color: theme.muted }
 			}
 		}
 	};
@@ -87,25 +137,30 @@ export const getOrCreateTooltip = (chart: Chart) => {
 	const parentNode = chart.canvas.parentNode;
 	if (!parentNode) return null;
 
-	let tooltipEl = parentNode.querySelector<HTMLDivElement>('div.chartjs-tooltip');
+	const tooltipId = `${chart.canvas.id}-tooltip`;
+	let tooltipEl = document.getElementById(tooltipId) as HTMLDivElement | null;
 
 	if (!tooltipEl) {
 		tooltipEl = document.createElement('div');
-		tooltipEl.classList.add('chartjs-tooltip');
-
-		Object.assign(tooltipEl.style, {
-			background: '#ffffff',
-			borderRadius: '4px',
-			boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
-			opacity: '1',
-			pointerEvents: 'none',
-			position: 'absolute',
-			transition: 'all .1s ease',
-			padding: '10px 12px',
-			fontFamily: 'system-ui, -apple-system, sans-serif',
-			minWidth: '140px',
-			zIndex: '999'
-		});
+		tooltipEl.id = tooltipId;
+		tooltipEl.classList.add(
+			'pointer-events-none',
+			'absolute',
+			'z-[999]',
+			'min-w-[140px]',
+			'rounded-md',
+			'border',
+			'border-(--sl-color-gray-5)',
+			'bg-(--sl-color-bg)',
+			'px-3',
+			'py-[10px]',
+			'text-(--sl-color-white)',
+			'shadow-[0px_4px_16px_rgba(0,0,0,0.25)]',
+			'transition-all',
+			'duration-100',
+			'font-[system-ui,-apple-system,sans-serif]'
+		);
+		tooltipEl.style.opacity = '1';
 
 		parentNode.appendChild(tooltipEl);
 	}
@@ -127,10 +182,10 @@ export const customTooltip = (context: { chart: Chart; tooltip: TooltipModel<any
 		let innerHtml = '';
 
 		titleLines.forEach((title: string) => {
-			innerHtml += `<div style="font-size: 14px; font-weight: 500; color: black; margin-bottom: 8px;">${title}</div>`;
+			innerHtml += `<div class="mb-2 text-sm font-medium text-(--sl-color-white)">${title}</div>`;
 		});
 
-		innerHtml += `<div style="color: black; display: flex; flex-direction: column; gap: 1px;">`;
+		innerHtml += `<div class="flex flex-col gap-px">`;
 
 		tooltip.body.forEach((_, i: number) => {
 			const colors = tooltip.labelColors[i];
@@ -139,12 +194,12 @@ export const customTooltip = (context: { chart: Chart; tooltip: TooltipModel<any
 			const value = tooltip.dataPoints[i].raw;
 
 			innerHtml += `
-			<div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px;">
-				<div style="display: flex; align-items: center; gap: 8px;">
-					<span style="background: ${colors.backgroundColor as string}; width: 12px; height: 12px; border-radius: 3px; display: inline-block;"></span>
+			<div class="flex items-center justify-between text-sm">
+				<div class="flex items-center gap-2">
+					<span class="inline-block h-3 w-3 rounded-[3px]" style="background: ${colors.backgroundColor as string};"></span>
 					<span>${label}</span>
 				</div>
-				<span style="margin-left: 20px; font-weight: bolder;">${value}</span>
+				<span class="ml-5 font-bold">${value}</span>
 			</div>
 			`;
 		});
@@ -182,56 +237,85 @@ export function parseCSV(csvText: string) {
 	});
 }
 
-export async function initChart(chartType: 'bar' | 'line' = 'bar', selector: string = '.chart') {
+const chartInstances = new Map<HTMLCanvasElement, { chart: Chart; chartType: 'bar' | 'line' }>();
+let themeListenerBound = false;
+
+async function renderChart(canvas: HTMLCanvasElement, chartType: 'bar' | 'line') {
+	const csvPath = canvas.dataset.csv;
+	const xColumn = canvas.dataset.x;
+	const yColumns = JSON.parse(canvas.dataset.y || '[]');
+	const title = canvas.dataset.title;
+	const subtitle = canvas.dataset.subtitle;
+
+	if (!csvPath || !xColumn) return;
+
+	const response = await fetch(csvPath);
+	const csvText = await response.text();
+	const data = parseCSV(csvText);
+
+	const labels = data.map((row) => row[xColumn]);
+	const isLine = chartType === 'line';
+
+	const datasets = yColumns.map((yCol: string, index: number) => {
+		const hue = (index * 137.5) % 360;
+		const baseColor = `hsl(${hue}, 70%, 50%)`;
+
+		return {
+			label: yCol,
+			data: data.map((row) => parseFloat(row[yCol] || '0')),
+			backgroundColor: isLine ? `hsla(${hue}, 70%, 50%, 0.1)` : `hsla(${hue}, 70%, 50%, 0.6)`,
+			borderColor: baseColor,
+			borderWidth: isLine ? 2 : 1,
+			fill: canvas.dataset.fill === 'true',
+			tension: isLine ? 0.2 : 0,
+			pointBackgroundColor: baseColor,
+			pointRadius: isLine ? 3 : 0,
+			pointHoverRadius: isLine ? 5 : 0
+		};
+	});
+
+	const chart = new Chart(canvas, chartConfig(chartType, labels, datasets, title, subtitle));
+	chartInstances.set(canvas, { chart, chartType });
+}
+
+function bindThemeListener() {
+	if (themeListenerBound) return;
+	themeListenerBound = true;
+
+	onThemeChange(() => {
+		for (const [canvas, { chart, chartType }] of [...chartInstances]) {
+			chart.destroy();
+			chartInstances.delete(canvas);
+			delete canvas.dataset.initialized;
+
+			if (canvas.isConnected) {
+				renderChart(canvas, chartType).catch((error) => {
+					console.error(`Failed to re-render ${chartType} chart:`, error);
+				});
+			}
+		}
+	});
+}
+
+export async function initChart(chartType: 'bar' | 'line' = 'bar', selector: string = 'canvas[id^="chart-"]') {
 	const canvases = document.querySelectorAll<HTMLCanvasElement>(selector);
 
 	for (const canvas of canvases) {
 		if (canvas.dataset.initialized) continue;
 		canvas.dataset.initialized = 'true';
 
-		const csvPath = canvas.dataset.csv;
-		const xColumn = canvas.dataset.x;
-		const yColumns = JSON.parse(canvas.dataset.y || '[]');
-		const title = canvas.dataset.title;
-		const subtitle = canvas.dataset.subtitle;
-
-		if (!csvPath || !xColumn) continue;
-
 		try {
-			const response = await fetch(csvPath);
-			const csvText = await response.text();
-			const data = parseCSV(csvText);
-
-			const labels = data.map((row) => row[xColumn]);
-			const isLine = chartType === 'line';
-
-			const datasets = yColumns.map((yCol: string, index: number) => {
-				const hue = (index * 137.5) % 360;
-				const baseColor = `hsl(${hue}, 70%, 50%)`;
-
-				return {
-					label: yCol,
-					data: data.map((row) => parseFloat(row[yCol] || '0')),
-					backgroundColor: isLine ? `hsla(${hue}, 70%, 50%, 0.1)` : `hsla(${hue}, 70%, 50%, 0.6)`,
-					borderColor: baseColor,
-					borderWidth: isLine ? 2 : 1,
-					fill: canvas.dataset.fill === 'true',
-					tension: isLine ? 0.2 : 0,
-					pointBackgroundColor: baseColor,
-					pointRadius: isLine ? 3 : 0,
-					pointHoverRadius: isLine ? 5 : 0
-				};
-			});
-
-			new Chart(canvas, chartConfig(chartType, labels, datasets, title, subtitle));
+			await renderChart(canvas, chartType);
 		} catch (error) {
 			console.error(`Failed to render ${chartType} chart:`, error);
 		}
 	}
+
+	bindThemeListener();
 }
 
 export async function initBarCharts() {
-	const canvases = document.querySelectorAll<HTMLCanvasElement>('.astro-bar-chart');
+	const canvases = document.querySelectorAll<HTMLCanvasElement>('canvas[id^="chart-"]');
 
 	for (const canvas of canvases) {
 		if (canvas.dataset.initialized) continue;

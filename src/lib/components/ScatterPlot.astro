@@ -1,0 +1,243 @@
+---
+interface Props {
+	csvPath: string;
+	title?: string;
+	subtitle?: string;
+}
+
+const { csvPath, title, subtitle } = Astro.props;
+
+// Unique per instance so multiple plots can live on the same page
+const id = `scatter-plot-${crypto.randomUUID()}`;
+---
+
+<div
+	id={id}
+	class="not-content flex flex-col gap-4 font-[system-ui,-apple-system,sans-serif]"
+	data-csv={csvPath}
+	data-title={title || ''}
+	data-subtitle={subtitle || ''}
+>
+	<div class="text-center">
+		{title && <h3 class="m-0 text-[1.1rem] font-semibold text-(--sl-color-white)">{title}</h3>}
+		{subtitle && <p class="mt-1 mb-0 text-sm text-(--sl-color-gray-3)">{subtitle}</p>}
+	</div>
+
+	<div class="flex flex-wrap justify-center gap-4">
+		<div class="flex flex-col gap-1">
+			<label class="text-[0.8rem] font-semibold tracking-wider text-(--sl-color-gray-2) uppercase">Eixo X</label>
+			<select
+				id={`${id}-x`}
+				class="min-w-45 cursor-pointer rounded-md border border-(--sl-color-gray-5) bg-(--sl-color-bg) px-3 py-1.5 text-sm text-(--sl-color-white) focus:outline-2 focus:outline-offset-1 focus:outline-(--sl-color-accent)"
+			></select>
+		</div>
+		<div class="flex flex-col gap-1">
+			<label class="text-[0.8rem] font-semibold tracking-wider text-(--sl-color-gray-2) uppercase">Eixo Y</label>
+			<select
+				id={`${id}-y`}
+				class="min-w-45 cursor-pointer rounded-md border border-(--sl-color-gray-5) bg-(--sl-color-bg) px-3 py-1.5 text-sm text-(--sl-color-white) focus:outline-2 focus:outline-offset-1 focus:outline-(--sl-color-accent)"
+			></select>
+		</div>
+	</div>
+
+	<div class="relative h-80 w-full">
+		<canvas id={`${id}-canvas`}></canvas>
+	</div>
+</div>
+
+<script>
+	import { getChartTheme, onThemeChange, parseCSV } from './chartUtils';
+	import Chart from 'chart.js/auto';
+
+	function initScatterPlots() {
+		const containers = document.querySelectorAll<HTMLDivElement>('div[id^="scatter-plot-"]');
+
+		for (const container of containers) {
+			if (container.dataset.initialized) continue;
+			container.dataset.initialized = 'true';
+
+			const csvPath = container.dataset.csv;
+			if (!csvPath) continue;
+
+			const canvas = document.getElementById(`${container.id}-canvas`) as HTMLCanvasElement | null;
+			const xSelect = document.getElementById(`${container.id}-x`) as HTMLSelectElement | null;
+			const ySelect = document.getElementById(`${container.id}-y`) as HTMLSelectElement | null;
+			if (!canvas || !xSelect || !ySelect) continue;
+
+			// Keep narrowed references for the nested functions below, where TS
+			// no longer applies the null checks performed here.
+			const canvasEl: HTMLCanvasElement = canvas;
+			const xSelectEl: HTMLSelectElement = xSelect;
+			const ySelectEl: HTMLSelectElement = ySelect;
+			const csvUrl: string = csvPath;
+
+			let chartInstance: Chart | null = null;
+			let csvData: Record<string, string | null>[] = [];
+			let columns: string[] = [];
+
+			// Unique color per data point using golden angle
+			function pointColor(index: number, alpha = 0.75): string {
+				const hue = (index * 137.5) % 360;
+				return `hsla(${hue}, 70%, 50%, ${alpha})`;
+			}
+
+			function pointBorder(index: number): string {
+				const hue = (index * 137.5) % 360;
+				return `hsl(${hue}, 70%, 40%)`;
+			}
+
+			function buildChart(xCol: string, yCol: string) {
+				const theme = getChartTheme();
+				const points = csvData.map((row, i) => ({
+					x: parseFloat(row[xCol] || '0'),
+					y: parseFloat(row[yCol] || '0'),
+					index: i
+				}));
+
+				// Group into individual datasets so each point can be toggled from the legend
+				const datasets = points.map((p, i) => ({
+					label: `${i + 1}`,
+					data: [p],
+					backgroundColor: pointColor(i),
+					borderColor: pointBorder(i),
+					borderWidth: 1.5,
+					pointRadius: 6,
+					pointHoverRadius: 9,
+					parsing: false
+				}));
+
+				const config = {
+					type: 'scatter' as const,
+					data: { datasets },
+					options: {
+						responsive: true,
+						maintainAspectRatio: false,
+						scales: {
+							x: {
+								type: 'linear' as const,
+								title: {
+									display: true,
+									text: xCol,
+									color: theme.text,
+									font: { size: 14, weight: 'bold' as const }
+								},
+								grid: { display: false },
+								ticks: { color: theme.muted }
+							},
+							y: {
+								type: 'linear' as const,
+								title: {
+									display: true,
+									text: yCol,
+									color: theme.text,
+									font: { size: 14, weight: 'bold' as const }
+								},
+								beginAtZero: false,
+								ticks: { color: theme.muted },
+								grid: { color: theme.grid }
+							}
+						},
+						plugins: {
+							legend: {
+								display: true,
+								labels: {
+									color: theme.text,
+									usePointStyle: true
+								}
+							},
+							tooltip: {
+								callbacks: {
+									title(items: any[]) {
+										if (!items.length) return '';
+										const idx = items[0].datasetIndex;
+										return `Ponto ${idx + 1}`;
+									},
+									label(item: any) {
+										const p = item.raw;
+										return `(${p.x}, ${p.y})`;
+									}
+								}
+							},
+							title: { display: false },
+							subtitle: { display: false }
+						}
+					}
+				};
+
+				if (chartInstance) {
+					chartInstance.destroy();
+				}
+				chartInstance = new Chart(canvasEl, config as any);
+			}
+
+			async function load() {
+				try {
+					const response = await fetch(csvUrl);
+					const csvText = await response.text();
+					csvData = parseCSV(csvText);
+					if (csvData.length === 0) return;
+
+					// First column is typically an index/label — exclude it from axis options
+					columns = Object.keys(csvData[0]).filter((key) => {
+						const val = csvData[0][key];
+						return val !== null && !isNaN(Number(val));
+					});
+
+					// Filter out columns where all values look like sequential IDs (1..N)
+					const numericColumns = columns.filter((col) => {
+						const values = csvData.map((r) => parseFloat(r[col] || '0'));
+						const isSequential = values.length > 2 && values.every((v, i) => Math.abs(v - (i + 1)) < 0.001);
+						return !isSequential;
+					});
+
+					const axisColumns = numericColumns.length > 1 ? numericColumns : columns;
+
+					// Populate dropdowns
+					for (const col of axisColumns) {
+						const optX = document.createElement('option');
+						optX.value = col;
+						optX.textContent = col;
+						xSelectEl.appendChild(optX);
+
+						const optY = document.createElement('option');
+						optY.value = col;
+						optY.textContent = col;
+						ySelectEl.appendChild(optY);
+					}
+
+					// Default: first two numeric columns
+					xSelectEl.value = axisColumns[0];
+					ySelectEl.value = axisColumns[1] || axisColumns[0];
+
+					buildChart(xSelectEl.value, ySelectEl.value);
+
+					xSelectEl.addEventListener('change', () => {
+						buildChart(xSelectEl.value, ySelectEl.value);
+					});
+					ySelectEl.addEventListener('change', () => {
+						buildChart(xSelectEl.value, ySelectEl.value);
+					});
+
+					onThemeChange(() => {
+						// Keep the points the user hid through the legend when re-rendering
+						const hidden = chartInstance ? chartInstance.data.datasets.flatMap((_, i) => (chartInstance!.getDatasetMeta(i).hidden ? [i] : [])) : [];
+
+						buildChart(xSelectEl.value, ySelectEl.value);
+
+						if (chartInstance && hidden.length > 0) {
+							for (const i of hidden) chartInstance.setDatasetVisibility(i, false);
+							chartInstance.update();
+						}
+					});
+				} catch (error) {
+					console.error('Failed to render scatter chart:', error);
+				}
+			}
+
+			load();
+		}
+	}
+
+	initScatterPlots();
+	document.addEventListener('astro:page-load', initScatterPlots);
+</script>
