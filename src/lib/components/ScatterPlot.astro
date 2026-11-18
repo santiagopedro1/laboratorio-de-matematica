@@ -75,16 +75,9 @@ const id = `scatter-plot-${crypto.randomUUID()}`;
 			let csvData: Record<string, string | null>[] = [];
 			let columns: string[] = [];
 
-			// Unique color per data point using golden angle
-			function pointColor(index: number, alpha = 0.75): string {
-				const hue = (index * 137.5) % 360;
-				return `hsla(${hue}, 70%, 50%, ${alpha})`;
-			}
-
-			function pointBorder(index: number): string {
-				const hue = (index * 137.5) % 360;
-				return `hsl(${hue}, 70%, 40%)`;
-			}
+			// Single color for every data point
+			const pointColor = 'hsla(210, 70%, 50%, 0.75)';
+			const pointBorder = 'hsl(210, 70%, 40%)';
 
 			function buildChart(xCol: string, yCol: string) {
 				const theme = getChartTheme();
@@ -98,8 +91,8 @@ const id = `scatter-plot-${crypto.randomUUID()}`;
 				const datasets = points.map((p, i) => ({
 					label: `${i + 1}`,
 					data: [p],
-					backgroundColor: pointColor(i),
-					borderColor: pointBorder(i),
+					backgroundColor: pointColor,
+					borderColor: pointBorder,
 					borderWidth: 1.5,
 					pointRadius: 6,
 					pointHoverRadius: 9,
@@ -139,11 +132,7 @@ const id = `scatter-plot-${crypto.randomUUID()}`;
 						},
 						plugins: {
 							legend: {
-								display: true,
-								labels: {
-									color: theme.text,
-									usePointStyle: true
-								}
+								display: false
 							},
 							tooltip: {
 								callbacks: {
